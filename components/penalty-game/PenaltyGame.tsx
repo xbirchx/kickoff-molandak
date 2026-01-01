@@ -146,7 +146,7 @@ export function PenaltyGame() {
   const canPlayPractice =
     selectedPosition !== null &&
     entropyFee !== undefined &&
-    balance?.value &&
+    balance?.value !== undefined &&
     balance.value >= entropyFee &&
     gameState === "idle";
 
@@ -154,7 +154,7 @@ export function PenaltyGame() {
     selectedPosition !== null &&
     selectedBet !== null &&
     totalCost !== null &&
-    balance?.value &&
+    balance?.value !== undefined &&
     balance.value >= totalCost &&
     gameState === "idle";
 
