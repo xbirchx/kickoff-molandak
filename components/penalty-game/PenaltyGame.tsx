@@ -145,12 +145,10 @@ export function PenaltyGame() {
 
   const canPlayPractice =
     selectedPosition !== null &&
-    entropyFee !== undefined &&
-    balance?.value !== undefined &&
-    balance.value >= entropyFee &&
     gameState === "idle";
 
   const canPlayReal =
+    authenticated &&
     selectedPosition !== null &&
     selectedBet !== null &&
     totalCost !== null &&
@@ -168,19 +166,8 @@ export function PenaltyGame() {
     );
   }
 
-  if (!authenticated) {
-    return (
-      <div className="text-center space-y-6 py-12">
-        <div className="text-6xl">⚽</div>
-        <h2 className="text-3xl font-bold text-white">Molandak Kickoff</h2>
-        <p className="text-gray-400 max-w-md mx-auto">
-          Dive to save the penalty and win up to 5x your bet! Login with email
-          to start playing.
-        </p>
-        <LoginButton />
-      </div>
-    );
-  }
+  // Only require authentication for real mode
+  const requiresAuth = gameMode === "real" && !authenticated;
 
   // Build game result for display
   const displayResult = activeGame.gameResult
@@ -203,22 +190,28 @@ export function PenaltyGame() {
           </p>
         </div>
         <div className="text-right relative">
-          <div className="text-sm text-gray-400">Balance</div>
-          <div className="font-mono text-lg text-white">
-            {balance ? formatEther(balance.value).slice(0, 8) : "0"} MON
-          </div>
-          {address && (
-            <button
-              onClick={() => setShowWalletMenu(!showWalletMenu)}
-              className="font-mono text-xs text-gray-500 hover:text-purple-400 transition-colors cursor-pointer"
-              title="Click to manage wallet"
-            >
-              {shortenAddress(address)} ▼
-            </button>
+          {authenticated ? (
+            <>
+              <div className="text-sm text-gray-400">Balance</div>
+              <div className="font-mono text-lg text-white">
+                {balance ? formatEther(balance.value).slice(0, 8) : "0"} MON
+              </div>
+              {address && (
+                <button
+                  onClick={() => setShowWalletMenu(!showWalletMenu)}
+                  className="font-mono text-xs text-gray-500 hover:text-purple-400 transition-colors cursor-pointer"
+                  title="Click to manage wallet"
+                >
+                  {shortenAddress(address)} ▼
+                </button>
+              )}
+            </>
+          ) : (
+            <LoginButton />
           )}
 
           {/* Wallet dropdown menu */}
-          {showWalletMenu && (
+          {authenticated && showWalletMenu && (
             <div className="absolute right-0 top-full mt-2 w-72 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
               <div className="p-3 border-b border-gray-700">
                 <div className="text-xs text-gray-400 mb-1">Wallet Address</div>
@@ -333,16 +326,25 @@ export function PenaltyGame() {
       {/* Practice mode notice */}
       {gameMode === "practice" && (
         <div className="p-3 bg-purple-900/30 border border-purple-700 rounded-lg text-purple-300 text-sm">
-          Practice mode uses Pyth VRF for real randomness. No betting - just pay the network fee to play!
+          Practice mode is free to play! No wallet or fees required.
         </div>
       )}
 
       {/* Real mode notice */}
       {gameMode === "real" && (
         <div className="p-3 bg-green-900/30 border border-green-700 rounded-lg text-green-300 text-sm">
-          Real mode active! Select a position and bet amount, then click DIVE. Win 5x your bet if you save!
-          {!realGame.entropyFee && (
-            <span className="block mt-1 text-yellow-400">Loading contract data...</span>
+          {requiresAuth ? (
+            <div className="text-center space-y-3">
+              <p>Login to play Real Mode and win up to 5x your bet!</p>
+              <LoginButton />
+            </div>
+          ) : (
+            <>
+              Real mode active! Select a position and bet amount, then click DIVE. Win 5x your bet if you save!
+              {!realGame.entropyFee && (
+                <span className="block mt-1 text-yellow-400">Loading contract data...</span>
+              )}
+            </>
           )}
         </div>
       )}
@@ -413,12 +415,9 @@ export function PenaltyGame() {
                   </div>
                 </>
               )}
-              {gameMode === "practice" && entropyFee && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Network Fee (Pyth VRF)</span>
-                  <span className="text-white">
-                    {formatEther(entropyFee)} MON
-                  </span>
+              {gameMode === "practice" && (
+                <div className="text-sm text-gray-400">
+                  Free to play - select a position and dive!
                 </div>
               )}
             </div>
@@ -433,13 +432,15 @@ export function PenaltyGame() {
         </>
       )}
 
-      {/* Player stats - only show in real mode */}
-      {gameMode === "real" && <PlayerStats address={address} />}
+      {/* Player stats - only show in real mode when authenticated */}
+      {gameMode === "real" && authenticated && <PlayerStats address={address} />}
 
-      {/* Logout button */}
-      <div className="flex justify-center pt-4">
-        <LoginButton />
-      </div>
+      {/* Logout button - only show when authenticated */}
+      {authenticated && (
+        <div className="flex justify-center pt-4">
+          <LoginButton />
+        </div>
+      )}
     </div>
   );
 }
